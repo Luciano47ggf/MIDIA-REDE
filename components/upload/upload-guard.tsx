@@ -34,7 +34,7 @@ export function UploadGuard() {
   return (
     <Link
       href={`/admin/albuns/${albumId}`}
-      className="fixed bottom-20 right-4 z-40 flex items-center gap-3 rounded-2xl bg-ink px-4 py-3 text-white shadow-lg lg:bottom-6"
+      className="fixed bottom-4 right-4 z-40 flex items-center gap-3 rounded-2xl bg-ink px-4 py-3 text-white shadow-lg"
     >
       <CloudUpload className="h-5 w-5 animate-pulse" />
       <span className="text-sm">

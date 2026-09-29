@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, EyeOff, ExternalLink, Loader2, Trash2 } from "lucide-react";
+import { Eye, EyeOff, ExternalLink, Loader2, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deleteAlbumAction, setAlbumStatusAction } from "@/app/admin/actions";
@@ -50,19 +50,23 @@ export function AlbumActions({ albumId, title, slug, status, publicUrl, totalFil
   return (
     <div>
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={toggleStatus} disabled={pending} className={buttonClasses(status === "published" ? "secondary" : "primary", "md")}>
-          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : status === "published" ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          {status === "published" ? "Despublicar" : "Publicar"}
-        </button>
+        <a href={`/a/${slug}`} target="_blank" rel="noopener noreferrer" className={buttonClasses("secondary", "md")}>
+          <ExternalLink className="h-4 w-4" />
+          Ver página pública
+        </a>
         <button type="button" onClick={() => copy(publicUrl)} className={buttonClasses("secondary", "md")}>
           {copied ? "Link copiado" : "Copiar link"}
         </button>
         <ShareButton url={publicUrl} title={title} />
         <QrCodeButton url={publicUrl} slug={slug} />
-        <a href={`/a/${slug}`} target="_blank" rel="noopener noreferrer" className={buttonClasses("secondary", "md")}>
-          <ExternalLink className="h-4 w-4" />
-          Ver página
+        <a href="#editar-album" className={buttonClasses("secondary", "md")}>
+          <Pencil className="h-4 w-4" />
+          Editar álbum
         </a>
+        <button type="button" onClick={toggleStatus} disabled={pending} className={buttonClasses(status === "published" ? "secondary" : "primary", "md")}>
+          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : status === "published" ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {status === "published" ? "Despublicar" : "Publicar"}
+        </button>
         <button type="button" onClick={onDelete} disabled={pending} className={buttonClasses("danger", "md")}>
           <Trash2 className="h-4 w-4" />
           Excluir álbum

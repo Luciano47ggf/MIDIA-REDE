@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { AlbumActions } from "@/components/admin/album-actions";
 import { AlbumForm } from "@/components/admin/album-form";
 import { MediaManager } from "@/components/admin/media-manager";
+import { VisibilityPill } from "@/components/admin/visibility-pill";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { UploadDropzone } from "@/components/upload/upload-dropzone";
 import { UploadQueue } from "@/components/upload/upload-queue";
@@ -48,6 +49,7 @@ export default async function AlbumEditPage({
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">{album.title}</h1>
           <StatusBadge status={album.status} />
+          <VisibilityPill visibility={album.visibility} />
         </div>
         <p className="mt-1 text-muted">
           {formatEventDate(album.event_date)} <span className="px-1 text-line">|</span> {mediaCountLabel(photos, videos)}
@@ -79,13 +81,12 @@ export default async function AlbumEditPage({
         <MediaManager albumId={album.id} items={items} coverMediaId={album.cover_media_id} />
       </section>
 
-      <section className="mt-12 max-w-2xl">
-        <details className="group rounded-2xl border border-line bg-surface" open={false}>
-          <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 font-display text-lg font-semibold tracking-tight sm:px-8">
-            Editar informações do álbum
-            <span className="text-sm font-normal text-muted group-open:hidden">Abrir</span>
-            <span className="hidden text-sm font-normal text-muted group-open:inline">Fechar</span>
-          </summary>
+      <section id="editar-album" className="mt-12 max-w-2xl scroll-mt-20">
+        <div className="rounded-2xl border border-line bg-surface">
+          <div className="px-5 py-4 sm:px-8">
+            <h2 className="font-display text-lg font-semibold tracking-tight">Editar informações do álbum</h2>
+            <p className="mt-0.5 text-sm text-muted">Nome, data, endereço e acesso (público ou privado com senha).</p>
+          </div>
           <div className="border-t border-line px-5 py-6 sm:px-8">
             <AlbumForm
               key={album.updated_at}
@@ -102,7 +103,7 @@ export default async function AlbumEditPage({
               }}
             />
           </div>
-        </details>
+        </div>
       </section>
     </div>
   );

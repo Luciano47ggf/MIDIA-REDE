@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/supabase";
-import type { AlbumOverview, AlbumStatus, DashboardStats, MediaPage, MediaRecord, MediaType } from "@/types";
+import type { AlbumOverview, AlbumStatus, AlbumVisibility, DashboardStats, MediaPage, MediaRecord, MediaType } from "@/types";
 import { MEDIA_ITEM_COLUMNS, toMediaItem } from "@/lib/media";
 
 type DB = SupabaseClient<Database>;
@@ -22,12 +22,20 @@ export async function getDashboardStats(db: DB): Promise<DashboardStats> {
 
 export async function listAlbums(
   db: DB,
-  opts: { status?: AlbumStatus; search?: string; limit?: number; offset?: number; orderBy?: "created_at" | "event_date" } = {},
+  opts: {
+    status?: AlbumStatus;
+    visibility?: AlbumVisibility;
+    search?: string;
+    limit?: number;
+    offset?: number;
+    orderBy?: "created_at" | "event_date";
+  } = {},
 ): Promise<{ albums: AlbumOverview[]; total: number }> {
   const limit = opts.limit ?? 60;
   const offset = opts.offset ?? 0;
   let query = db.from("albums_overview").select(OVERVIEW_COLUMNS, { count: "exact" });
   if (opts.status) query = query.eq("status", opts.status);
+  if (opts.visibility) query = query.eq("visibility", opts.visibility);
   if (opts.search) {
     const term = opts.search.replace(/[%_,()]/g, " ").trim();
     if (term) query = query.ilike("title", `%${term}%`);
