@@ -17,20 +17,20 @@ export const serverEnv = {
   get supabaseServiceRoleKey() {
     return required("SUPABASE_SERVICE_ROLE_KEY");
   },
-  get r2AccountId() {
-    return required("R2_ACCOUNT_ID");
+  get b2KeyId() {
+    return required("B2_KEY_ID");
   },
-  get r2AccessKeyId() {
-    return required("R2_ACCESS_KEY_ID");
+  get b2ApplicationKey() {
+    return required("B2_APPLICATION_KEY");
   },
-  get r2SecretAccessKey() {
-    return required("R2_SECRET_ACCESS_KEY");
+  get b2BucketName() {
+    return required("B2_BUCKET_NAME");
   },
-  get r2Bucket() {
-    return required("R2_BUCKET_NAME");
+  get b2Endpoint() {
+    return required("B2_ENDPOINT").replace(/\/+$/, "");
   },
-  get r2PublicUrl() {
-    return required("R2_PUBLIC_URL").replace(/\/+$/, "");
+  get b2Region() {
+    return required("B2_REGION");
   },
   get albumAccessSecret() {
     const v = required("ALBUM_ACCESS_SECRET");

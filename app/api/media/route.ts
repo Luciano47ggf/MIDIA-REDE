@@ -3,13 +3,13 @@ import { revalidatePath } from "next/cache";
 import { requireTeamUserApi } from "@/lib/auth";
 import { jsonError, logServerError, readJson } from "@/lib/api";
 import { checkFile } from "@/lib/media-rules";
-import { deleteKeys, headObject } from "@/lib/r2";
+import { deleteKeys, headObject } from "@/lib/storage";
 import { isOriginalKeyOf, previewKey, thumbKey, UUID_RE } from "@/lib/storage-keys";
 import { createClient } from "@/lib/supabase/server";
 import type { RegisterMediaRequest } from "@/types/upload";
 
 /**
- * Último passo do upload: confere no R2 que o arquivo chegou inteiro
+ * Último passo do upload: confere no Backblaze B2 que o arquivo chegou inteiro
  * e registra as informações no Supabase.
  */
 export async function POST(request: Request) {
@@ -42,12 +42,12 @@ export async function POST(request: Request) {
     ]);
   } catch (err) {
     logServerError("media/register head", err);
-    return jsonError("Não foi possível confirmar o arquivo no Cloudflare R2.", 502);
+    return jsonError("Não foi possível confirmar o arquivo no Backblaze B2.", 502);
   }
 
-  if (!original) return jsonError("O arquivo não chegou ao Cloudflare R2. Envie novamente.", 409);
+  if (!original) return jsonError("O arquivo não chegou ao Backblaze B2. Envie novamente.", 409);
   if (original.size !== b.size) {
-    return jsonError("O arquivo chegou incompleto ao Cloudflare R2. Envie novamente.", 409);
+    return jsonError("O arquivo chegou incompleto ao Backblaze B2. Envie novamente.", 409);
   }
 
   const toInt = (n: number | null) => (typeof n === "number" && Number.isFinite(n) && n > 0 ? Math.round(n) : null);

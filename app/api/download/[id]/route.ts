@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { hasAlbumAccess } from "@/lib/album-access";
 import { getTeamUser } from "@/lib/auth";
-import { presignDownload } from "@/lib/r2";
+import { presignDownload } from "@/lib/storage";
 import { UUID_RE } from "@/lib/storage-keys";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
- * "Baixar original": confere a permissão e redireciona para uma URL temporária do R2
- * que entrega EXATAMENTE o arquivo enviado, com o nome original.
+ * "Baixar original": confere a permissão e redireciona para uma URL temporária do
+ * Backblaze B2 que entrega EXATAMENTE o arquivo enviado, com o nome original.
  * O arquivo não passa pela Vercel (sem limite de tamanho/tempo).
  */
 export async function GET(_request: Request, ctx: { params: Promise<{ id: string }> }) {

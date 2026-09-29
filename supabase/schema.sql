@@ -13,13 +13,15 @@ create table if not exists public.profiles (
   id          uuid primary key references auth.users (id) on delete cascade,
   email       text not null,
   name        text,
-  avatar_url  text,
+  avatar_key  text,  -- chave do objeto no Backblaze B2 (bucket privado); NUNCA uma URL, que expiraria
   role        text not null default 'editor' check (role in ('admin', 'editor')),
   created_at  timestamptz not null default now()
 );
 
 -- Para bancos criados antes deste campo existir.
-alter table public.profiles add column if not exists avatar_url text;
+alter table public.profiles add column if not exists avatar_key text;
+-- Versão antiga (Cloudflare R2, bucket público) guardava uma URL nesta coluna; não existe mais.
+alter table public.profiles drop column if exists avatar_url;
 
 -- ─── ALBUMS ─────────────────────────────────────────────────────
 create table if not exists public.albums (

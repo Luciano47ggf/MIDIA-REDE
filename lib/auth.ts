@@ -12,7 +12,7 @@ export async function getTeamUser(): Promise<Profile | null> {
   if (!user) return null;
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, email, name, avatar_url, role, created_at")
+    .select("id, email, name, avatar_key, role, created_at")
     .eq("id", user.id)
     .maybeSingle();
   return profile ?? null;

@@ -1,5 +1,5 @@
 import type { MediaItem, MediaRecord } from "@/types";
-import { publicUrl } from "@/lib/r2";
+import { presignGet } from "@/lib/storage";
 
 type MediaRowForItem = Pick<
   MediaRecord,
@@ -19,11 +19,17 @@ type MediaRowForItem = Pick<
 export const MEDIA_ITEM_COLUMNS =
   "id, type, original_filename, storage_key, thumb_key, preview_key, mime_type, file_size, width, height, duration" as const;
 
-/** Converte a linha do banco em um item pronto para a interface (sem dados sensíveis). */
-export function toMediaItem(row: MediaRowForItem): MediaItem {
-  const original = publicUrl(row.storage_key);
-  const thumb = row.thumb_key ? publicUrl(row.thumb_key) : null;
-  const preview = row.preview_key ? publicUrl(row.preview_key) : null;
+/**
+ * Converte a linha do banco em um item pronto para a interface (sem dados sensíveis).
+ * O bucket é privado, então cada URL é assinada na hora — nunca gravamos URLs no banco,
+ * só as chaves dos objetos.
+ */
+export async function toMediaItem(row: MediaRowForItem): Promise<MediaItem> {
+  const [original, thumb, preview] = await Promise.all([
+    presignGet(row.storage_key),
+    row.thumb_key ? presignGet(row.thumb_key) : Promise.resolve(null),
+    row.preview_key ? presignGet(row.preview_key) : Promise.resolve(null),
+  ]);
   return {
     id: row.id,
     type: row.type,
@@ -41,6 +47,6 @@ export function toMediaItem(row: MediaRowForItem): MediaItem {
   };
 }
 
-export function coverUrl(key: string | null): string | null {
-  return key ? publicUrl(key) : null;
+export async function coverUrl(key: string | null): Promise<string | null> {
+  return key ? presignGet(key) : null;
 }

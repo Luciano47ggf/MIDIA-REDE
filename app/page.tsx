@@ -21,6 +21,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     orderBy: "event_date",
   });
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const covers = await Promise.all(
+    albums.map((a) => (a.visibility === "public" ? coverUrl(a.cover_preview_key ?? a.cover_thumb_key) : Promise.resolve(null))),
+  );
   const [titleFirstWord, ...titleRest] = siteConfig.homeTitle.split(" ");
   const [taglineLine1, taglineLine2] = siteConfig.homeFooterTagline.split(",").map((s) => s.trim());
 
@@ -92,7 +95,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 eventDate={a.event_date}
                 photos={a.photo_count}
                 videos={a.video_count}
-                cover={a.visibility === "public" ? coverUrl(a.cover_preview_key ?? a.cover_thumb_key) : null}
+                cover={covers[i]}
                 locked={a.visibility === "password"}
                 priority={i < 3}
               />

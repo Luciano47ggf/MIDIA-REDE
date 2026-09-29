@@ -102,7 +102,7 @@ export async function getMediaPage(
   const rows = data ?? [];
   const hasMore = rows.length > opts.limit;
   return {
-    items: rows.slice(0, opts.limit).map(toMediaItem),
+    items: await Promise.all(rows.slice(0, opts.limit).map(toMediaItem)),
     nextOffset: hasMore ? opts.offset + opts.limit : null,
   };
 }

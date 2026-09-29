@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireTeamUserApi } from "@/lib/auth";
 import { jsonError, logServerError, readJson } from "@/lib/api";
-import { completeMultipart } from "@/lib/r2";
+import { completeMultipart } from "@/lib/storage";
 import { isAnyOriginalKey } from "@/lib/storage-keys";
 import type { UploadedPart } from "@/types/upload";
 
-/** Junta as partes no R2, formando o arquivo original completo. */
+/** Junta as partes no Backblaze B2, formando o arquivo original completo. */
 export async function POST(request: Request) {
   const auth = await requireTeamUserApi();
   if ("response" in auth) return auth.response;
@@ -26,6 +26,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     logServerError("multipart/complete", err);
-    return jsonError("O Cloudflare R2 não conseguiu finalizar o arquivo. Tente enviar novamente.", 502);
+    return jsonError("O Backblaze B2 não conseguiu finalizar o arquivo. Tente enviar novamente.", 502);
   }
 }

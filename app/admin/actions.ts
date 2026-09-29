@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireTeamUser } from "@/lib/auth";
-import { deleteKeys, deletePrefix, keyFromPublicUrl, publicUrl, putPublicObject } from "@/lib/r2";
+import { deleteKeys, deletePrefix, putObject } from "@/lib/storage";
 import { albumPrefix, avatarKey, UUID_RE } from "@/lib/storage-keys";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -168,7 +168,7 @@ export async function deleteMediaAction(mediaIds: string[]): Promise<ActionResul
   try {
     await deleteKeys(keys);
   } catch {
-    // Os registros já saíram do álbum; os arquivos restantes no R2 não aparecem para ninguém.
+    // Os registros já saíram do álbum; os arquivos restantes no Backblaze B2 não aparecem para ninguém.
   }
   const albumId = rows?.[0]?.album_id;
   if (albumId) {
@@ -190,7 +190,7 @@ export async function deleteAlbumAction(albumId: string): Promise<ActionResult> 
     await deletePrefix(albumPrefix(albumId));
   } catch {
     revalidateAlbum(data.slug);
-    return { ok: true, message: "Álbum excluído, mas alguns arquivos não foram removidos do R2." };
+    return { ok: true, message: "Álbum excluído, mas alguns arquivos não foram removidos do Backblaze B2." };
   }
   revalidateAlbum(data.slug);
   return { ok: true, message: "Álbum excluído." };
@@ -217,23 +217,22 @@ export async function updateAvatarAction(formData: FormData): Promise<ActionResu
   const key = avatarKey(profile.id, ext);
   const bytes = Buffer.from(await file.arrayBuffer());
   try {
-    await putPublicObject(key, bytes, file.type);
+    await putObject(key, bytes, file.type);
   } catch {
     return { ok: false, message: "Não foi possível enviar a foto. Tente novamente." };
   }
 
-  const url = publicUrl(key);
+  // Bucket privado: gravamos só a CHAVE do objeto (nunca uma URL, que expiraria).
   // Sem policy de UPDATE para a pessoa alterar o próprio perfil; usamos a service role
   // aqui dentro, já autenticados por requireTeamUser(), só para esta coluna.
   const admin = createAdminClient();
-  const { error } = await admin.from("profiles").update({ avatar_url: url }).eq("id", profile.id);
+  const { error } = await admin.from("profiles").update({ avatar_key: key }).eq("id", profile.id);
   if (error) {
     await deleteKeys([key]).catch(() => {});
     return { ok: false, message: "Não foi possível salvar a foto. Tente novamente." };
   }
 
-  const oldKey = profile.avatar_url ? keyFromPublicUrl(profile.avatar_url) : null;
-  if (oldKey) await deleteKeys([oldKey]).catch(() => {});
+  if (profile.avatar_key) await deleteKeys([profile.avatar_key]).catch(() => {});
 
   revalidatePath("/admin", "layout");
   return { ok: true, message: "Foto de perfil atualizada." };
@@ -242,11 +241,10 @@ export async function updateAvatarAction(formData: FormData): Promise<ActionResu
 export async function removeAvatarAction(): Promise<ActionResult> {
   const profile = await requireTeamUser();
   const admin = createAdminClient();
-  const { error } = await admin.from("profiles").update({ avatar_url: null }).eq("id", profile.id);
+  const { error } = await admin.from("profiles").update({ avatar_key: null }).eq("id", profile.id);
   if (error) return { ok: false, message: "Não foi possível remover a foto." };
 
-  const oldKey = profile.avatar_url ? keyFromPublicUrl(profile.avatar_url) : null;
-  if (oldKey) await deleteKeys([oldKey]).catch(() => {});
+  if (profile.avatar_key) await deleteKeys([profile.avatar_key]).catch(() => {});
 
   revalidatePath("/admin", "layout");
   return { ok: true, message: "Foto de perfil removida." };

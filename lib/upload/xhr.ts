@@ -1,7 +1,7 @@
 import { AbortedError, UploadError } from "./errors";
 
 /**
- * Envia um arquivo (ou pedaço dele) direto para o R2 usando XMLHttpRequest,
+ * Envia um arquivo (ou pedaço dele) direto para o Backblaze B2 usando XMLHttpRequest,
  * que é o único jeito de acompanhar o progresso do envio no navegador.
  */
 export function putWithProgress(
@@ -25,13 +25,13 @@ export function putWithProgress(
         onProgress(body.size);
         resolve({ etag: xhr.getResponseHeader("ETag") });
       } else if (xhr.status === 403) {
-        reject(new UploadError("O Cloudflare R2 recusou o envio (link expirado ou CORS não configurado)."));
+        reject(new UploadError("O Backblaze B2 recusou o envio (link expirado ou CORS não configurado)."));
       } else {
-        reject(new UploadError(`Erro no Cloudflare R2 (${xhr.status}).`));
+        reject(new UploadError(`Erro no Backblaze B2 (${xhr.status}).`));
       }
     };
     xhr.onerror = () =>
-      reject(new UploadError("Falha de conexão com o Cloudflare R2. Verifique a internet ou a configuração de CORS."));
+      reject(new UploadError("Falha de conexão com o Backblaze B2. Verifique a internet ou a configuração de CORS."));
     xhr.ontimeout = () => reject(new UploadError("O envio demorou demais e foi interrompido."));
     xhr.onabort = () => reject(new AbortedError());
 

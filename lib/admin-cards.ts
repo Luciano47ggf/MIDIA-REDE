@@ -3,7 +3,7 @@ import { appUrl } from "@/lib/env";
 import { coverUrl } from "@/lib/media";
 import type { AlbumOverview } from "@/types";
 
-export function toAdminCard(a: AlbumOverview): AdminAlbumCardData {
+export async function toAdminCard(a: AlbumOverview): Promise<AdminAlbumCardData> {
   return {
     id: a.id,
     title: a.title,
@@ -14,7 +14,7 @@ export function toAdminCard(a: AlbumOverview): AdminAlbumCardData {
     photos: a.photo_count,
     videos: a.video_count,
     bytes: Number(a.total_bytes ?? 0),
-    coverUrl: coverUrl(a.cover_thumb_key),
+    coverUrl: await coverUrl(a.cover_thumb_key),
     publicUrl: `${appUrl()}/a/${a.slug}`,
   };
 }

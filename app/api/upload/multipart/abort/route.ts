@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireTeamUserApi } from "@/lib/auth";
 import { jsonError, readJson } from "@/lib/api";
-import { abortMultipart } from "@/lib/r2";
+import { abortMultipart } from "@/lib/storage";
 import { isAnyOriginalKey } from "@/lib/storage-keys";
 
-/** Cancela um envio em partes e libera o espaço no R2. */
+/** Cancela um envio em partes e libera o espaço no Backblaze B2. */
 export async function POST(request: Request) {
   const auth = await requireTeamUserApi();
   if ("response" in auth) return auth.response;

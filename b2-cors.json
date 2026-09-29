@@ -1,0 +1,10 @@
+[
+  {
+    "corsRuleName": "midia-igreja-uploads",
+    "allowedOrigins": ["http://localhost:3000", "https://SEU-PROJETO.vercel.app"],
+    "allowedOperations": ["s3_get", "s3_put", "s3_head"],
+    "allowedHeaders": ["content-type", "cache-control"],
+    "exposeHeaders": ["ETag"],
+    "maxAgeSeconds": 3600
+  }
+]

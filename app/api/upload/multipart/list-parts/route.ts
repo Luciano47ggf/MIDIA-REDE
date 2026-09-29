@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireTeamUserApi } from "@/lib/auth";
 import { jsonError, readJson } from "@/lib/api";
-import { listUploadedParts } from "@/lib/r2";
+import { listUploadedParts } from "@/lib/storage";
 import { isAnyOriginalKey } from "@/lib/storage-keys";
 
-/** Usado para RETOMAR um envio: informa quais partes já chegaram ao R2. */
+/** Usado para RETOMAR um envio: informa quais partes já chegaram ao Backblaze B2. */
 export async function POST(request: Request) {
   const auth = await requireTeamUserApi();
   if ("response" in auth) return auth.response;

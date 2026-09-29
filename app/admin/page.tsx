@@ -25,6 +25,7 @@ export default async function DashboardPage() {
   const [stats, recent] = await Promise.all([getDashboardStats(supabase), listAlbums(supabase, { limit: 6 })]);
   const firstName = (profile.name ?? profile.email).split(" ")[0];
   const uploadHref = recent.albums.length > 0 ? `/admin/albuns/${recent.albums[0].id}` : "/admin/albuns/novo";
+  const recentCards = await Promise.all(recent.albums.map(toAdminCard));
 
   return (
     <div>
@@ -67,8 +68,8 @@ export default async function DashboardPage() {
           />
         ) : (
           <div className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            {recent.albums.map((a) => (
-              <AlbumCard key={a.id} album={toAdminCard(a)} />
+            {recentCards.map((card) => (
+              <AlbumCard key={card.id} album={card} />
             ))}
           </div>
         )}

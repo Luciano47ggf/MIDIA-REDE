@@ -17,30 +17,36 @@ import { serverEnv } from "@/lib/env";
 import { dispositionFilename } from "@/utils/filename";
 
 /**
- * Integração com o Cloudflare R2 (compatível com a API S3).
+ * Integração com o Backblaze B2 (bucket privado, API compatível com S3).
  * Este arquivo roda SOMENTE no servidor. As chaves secretas nunca vão para o navegador:
  * o navegador recebe apenas URLs assinadas, que expiram.
+ *
+ * Como o bucket é PRIVADO, não existe URL pública fixa: toda leitura (thumbnail,
+ * prévia, vídeo, download, avatar) precisa de uma URL assinada gerada na hora.
+ * Por isso só gravamos a CHAVE do objeto no banco (media.storage_key, thumb_key,
+ * preview_key, profiles.avatar_key) e assinamos a URL sempre que for exibir.
  */
 
-const UPLOAD_URL_TTL = 60 * 60; // 1 hora
-const DOWNLOAD_URL_TTL = 60 * 60; // 1 hora
+const UPLOAD_URL_TTL = 60 * 60; // 1 hora — tempo para o navegador enviar o arquivo/parte
+const DOWNLOAD_URL_TTL = 60 * 60; // 1 hora — "Baixar original" (consumida na hora, como redirect)
+const GET_URL_TTL = 6 * 60 * 60; // 6 horas — exibição na galeria/lightbox/avatar (sessões de navegação longas)
 
 /** Arquivos nunca mudam depois de enviados (nomes únicos), então o cache pode ser longo. */
 export const IMMUTABLE_CACHE = "public, max-age=31536000, immutable";
 
 let client: S3Client | null = null;
 
-export function r2(): S3Client {
+export function storageClient(): S3Client {
   if (!client) {
     client = new S3Client({
-      region: "auto",
-      endpoint: `https://${serverEnv.r2AccountId}.r2.cloudflarestorage.com`,
+      region: serverEnv.b2Region,
+      endpoint: serverEnv.b2Endpoint,
       credentials: {
-        accessKeyId: serverEnv.r2AccessKeyId,
-        secretAccessKey: serverEnv.r2SecretAccessKey,
+        accessKeyId: serverEnv.b2KeyId,
+        secretAccessKey: serverEnv.b2ApplicationKey,
       },
-      // Importante para o R2: evita que o SDK exija checksums extras nas URLs assinadas,
-      // o que faria o upload pelo navegador falhar.
+      // Evita que o SDK exija checksums extras nas URLs assinadas, o que faria
+      // o upload pelo navegador falhar em provedores S3-compatíveis (B2 incluso).
       requestChecksumCalculation: "WHEN_REQUIRED",
       responseChecksumValidation: "WHEN_REQUIRED",
     });
@@ -48,37 +54,18 @@ export function r2(): S3Client {
   return client;
 }
 
-const bucket = () => serverEnv.r2Bucket;
-
-export function publicUrl(key: string): string {
-  return `${serverEnv.r2PublicUrl}/${key.split("/").map(encodeURIComponent).join("/")}`;
-}
-
-/** Inverso de publicUrl(): recupera a chave do R2 a partir da URL pública, se ela for deste bucket. */
-export function keyFromPublicUrl(url: string): string | null {
-  const prefix = `${serverEnv.r2PublicUrl}/`;
-  if (!url.startsWith(prefix)) return null;
-  try {
-    return url
-      .slice(prefix.length)
-      .split("/")
-      .map((s) => decodeURIComponent(s))
-      .join("/");
-  } catch {
-    return null;
-  }
-}
+const bucket = () => serverEnv.b2BucketName;
 
 /** Upload direto e pequeno feito pelo próprio servidor (ex.: foto de perfil). Não usa URL assinada. */
-export async function putPublicObject(key: string, body: Buffer, contentType: string) {
-  await r2().send(
+export async function putObject(key: string, body: Buffer, contentType: string) {
+  await storageClient().send(
     new PutObjectCommand({ Bucket: bucket(), Key: key, Body: body, ContentType: contentType, CacheControl: IMMUTABLE_CACHE }),
   );
 }
 
 export async function presignPut(key: string, contentType: string) {
   const url = await getSignedUrl(
-    r2(),
+    storageClient(),
     new PutObjectCommand({ Bucket: bucket(), Key: key, ContentType: contentType, CacheControl: IMMUTABLE_CACHE }),
     { expiresIn: UPLOAD_URL_TTL, signableHeaders: new Set(["content-type", "cache-control"]) },
   );
@@ -86,8 +73,13 @@ export async function presignPut(key: string, contentType: string) {
   return { url, headers: { "Content-Type": contentType, "Cache-Control": IMMUTABLE_CACHE } };
 }
 
+/** URL temporária de LEITURA (bucket privado). Usada para thumbnail, prévia, vídeo e avatar. */
+export async function presignGet(key: string, expiresIn: number = GET_URL_TTL): Promise<string> {
+  return getSignedUrl(storageClient(), new GetObjectCommand({ Bucket: bucket(), Key: key }), { expiresIn });
+}
+
 export async function createMultipart(key: string, contentType: string): Promise<string> {
-  const res = await r2().send(
+  const res = await storageClient().send(
     new CreateMultipartUploadCommand({
       Bucket: bucket(),
       Key: key,
@@ -95,13 +87,13 @@ export async function createMultipart(key: string, contentType: string): Promise
       CacheControl: IMMUTABLE_CACHE,
     }),
   );
-  if (!res.UploadId) throw new Error("O R2 não retornou o identificador do envio.");
+  if (!res.UploadId) throw new Error("O Backblaze B2 não retornou o identificador do envio.");
   return res.UploadId;
 }
 
 export async function presignPart(key: string, uploadId: string, partNumber: number): Promise<string> {
   return getSignedUrl(
-    r2(),
+    storageClient(),
     new UploadPartCommand({ Bucket: bucket(), Key: key, UploadId: uploadId, PartNumber: partNumber }),
     { expiresIn: UPLOAD_URL_TTL },
   );
@@ -112,7 +104,7 @@ export async function listUploadedParts(key: string, uploadId: string) {
   const parts: { PartNumber: number; ETag: string; Size: number }[] = [];
   let marker: string | undefined;
   do {
-    const res = await r2().send(
+    const res = await storageClient().send(
       new ListPartsCommand({ Bucket: bucket(), Key: key, UploadId: uploadId, PartNumberMarker: marker }),
     );
     for (const p of res.Parts ?? []) {
@@ -125,7 +117,7 @@ export async function listUploadedParts(key: string, uploadId: string) {
 
 export async function completeMultipart(key: string, uploadId: string, parts: CompletedPart[]) {
   const sorted = [...parts].sort((a, b) => (a.PartNumber ?? 0) - (b.PartNumber ?? 0));
-  await r2().send(
+  await storageClient().send(
     new CompleteMultipartUploadCommand({
       Bucket: bucket(),
       Key: key,
@@ -136,12 +128,12 @@ export async function completeMultipart(key: string, uploadId: string, parts: Co
 }
 
 export async function abortMultipart(key: string, uploadId: string) {
-  await r2().send(new AbortMultipartUploadCommand({ Bucket: bucket(), Key: key, UploadId: uploadId }));
+  await storageClient().send(new AbortMultipartUploadCommand({ Bucket: bucket(), Key: key, UploadId: uploadId }));
 }
 
 export async function headObject(key: string): Promise<{ size: number; contentType?: string } | null> {
   try {
-    const res = await r2().send(new HeadObjectCommand({ Bucket: bucket(), Key: key }));
+    const res = await storageClient().send(new HeadObjectCommand({ Bucket: bucket(), Key: key }));
     return { size: res.ContentLength ?? 0, contentType: res.ContentType };
   } catch (err) {
     const status = (err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
@@ -154,7 +146,7 @@ export async function deleteKeys(keys: string[]) {
   const list = keys.filter(Boolean);
   for (let i = 0; i < list.length; i += 1000) {
     const chunk = list.slice(i, i + 1000);
-    await r2().send(
+    await storageClient().send(
       new DeleteObjectsCommand({
         Bucket: bucket(),
         Delete: { Objects: chunk.map((Key) => ({ Key })), Quiet: true },
@@ -167,7 +159,7 @@ export async function deleteKeys(keys: string[]) {
 export async function deletePrefix(prefix: string) {
   let token: string | undefined;
   do {
-    const res = await r2().send(
+    const res = await storageClient().send(
       new ListObjectsV2Command({ Bucket: bucket(), Prefix: prefix, ContinuationToken: token }),
     );
     const keys = (res.Contents ?? []).map((o) => o.Key).filter((k): k is string => Boolean(k));
@@ -181,7 +173,7 @@ export async function presignDownload(key: string, filename: string): Promise<st
   const safe = dispositionFilename(filename);
   const disposition = `attachment; filename="${safe.replace(/[^\x20-\x7e]/g, "_")}"; filename*=UTF-8''${encodeURIComponent(safe)}`;
   return getSignedUrl(
-    r2(),
+    storageClient(),
     new GetObjectCommand({ Bucket: bucket(), Key: key, ResponseContentDisposition: disposition }),
     { expiresIn: DOWNLOAD_URL_TTL },
   );

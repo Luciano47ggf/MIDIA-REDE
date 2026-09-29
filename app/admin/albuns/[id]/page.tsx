@@ -32,7 +32,7 @@ export default async function AlbumEditPage({
   const album = await getAlbumById(supabase, id);
   if (!album) notFound();
   const rows = await getAllAlbumMedia(supabase, id);
-  const items = rows.map(toMediaItem);
+  const items = await Promise.all(rows.map(toMediaItem));
   const photos = rows.filter((r) => r.type === "photo").length;
   const videos = rows.length - photos;
   const bytes = rows.reduce((sum, r) => sum + Number(r.file_size), 0);

@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const album = await getAlbumBySlug(db, slug);
   if (!album || album.status !== "published") return { title: "Álbum", robots: { index: false } };
   const overview = await getAlbumOverview(db, album.id);
-  const image = album.visibility === "public" ? coverUrl(overview?.cover_preview_key ?? null) : null;
+  const image = album.visibility === "public" ? await coverUrl(overview?.cover_preview_key ?? null) : null;
   const description = `${formatEventDate(album.event_date)}. ${mediaCountLabel(overview?.photo_count ?? 0, overview?.video_count ?? 0)}.`;
   return {
     title: album.title,
@@ -55,7 +55,7 @@ export default async function PublicAlbumPage({ params }: Params) {
   const overview = await getAlbumOverview(db, album.id);
   const photos = overview?.photo_count ?? 0;
   const videos = overview?.video_count ?? 0;
-  const cover = unlocked ? coverUrl(overview?.cover_preview_key ?? overview?.cover_thumb_key ?? null) : null;
+  const cover = unlocked ? await coverUrl(overview?.cover_preview_key ?? overview?.cover_thumb_key ?? null) : null;
   const initial = unlocked ? await getMediaPage(db, album.id, { offset: 0, limit: PAGE_SIZE }) : null;
   const shareUrl = `${appUrl()}/a/${album.slug}`;
 

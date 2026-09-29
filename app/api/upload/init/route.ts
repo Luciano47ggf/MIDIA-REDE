@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { requireTeamUserApi } from "@/lib/auth";
 import { jsonError, logServerError, readJson } from "@/lib/api";
 import { checkFile, MULTIPART_THRESHOLD, partSizeFor } from "@/lib/media-rules";
-import { createMultipart, presignPut } from "@/lib/r2";
+import { createMultipart, presignPut } from "@/lib/storage";
 import { originalKey, UUID_RE } from "@/lib/storage-keys";
 import { createClient } from "@/lib/supabase/server";
 import type { InitUploadRequest, InitUploadResponse } from "@/types/upload";
@@ -51,6 +51,6 @@ export async function POST(request: Request) {
     return NextResponse.json(res);
   } catch (err) {
     logServerError("upload/init", err);
-    return jsonError("Não foi possível falar com o Cloudflare R2. Confira as credenciais do R2.", 502);
+    return jsonError("Não foi possível falar com o Backblaze B2. Confira as credenciais do B2.", 502);
   }
 }

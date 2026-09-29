@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireTeamUserApi } from "@/lib/auth";
 import { jsonError, logServerError, readJson } from "@/lib/api";
-import { presignPart } from "@/lib/r2";
+import { presignPart } from "@/lib/storage";
 import { isAnyOriginalKey } from "@/lib/storage-keys";
 
 interface Body {
@@ -35,6 +35,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ urls: Object.fromEntries(entries) });
   } catch (err) {
     logServerError("multipart/sign-parts", err);
-    return jsonError("Erro ao preparar as partes do envio no Cloudflare R2.", 502);
+    return jsonError("Erro ao preparar as partes do envio no Backblaze B2.", 502);
   }
 }

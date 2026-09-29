@@ -2,9 +2,12 @@ import { Info } from "lucide-react";
 import { AvatarUpload } from "@/components/admin/avatar-upload";
 import { ChangePasswordForm } from "@/components/admin/change-password-form";
 import { requireTeamUser } from "@/lib/auth";
+import { presignGet } from "@/lib/storage";
 
 export default async function SettingsPage() {
   const profile = await requireTeamUser();
+  // Bucket privado: a chave é o que fica salvo; a URL é assinada a cada carregamento.
+  const avatarUrl = profile.avatar_key ? await presignGet(profile.avatar_key) : null;
 
   return (
     <div className="max-w-2xl">
@@ -15,7 +18,7 @@ export default async function SettingsPage() {
         <h2 className="font-display text-lg font-semibold tracking-tight">Sua conta</h2>
 
         <div className="mt-5">
-          <AvatarUpload name={profile.name ?? profile.email} avatarUrl={profile.avatar_url} />
+          <AvatarUpload name={profile.name ?? profile.email} avatarUrl={avatarUrl} />
         </div>
 
         <dl className="mt-8 grid gap-3 border-t border-line pt-6 text-[15px] sm:grid-cols-[140px_1fr]">

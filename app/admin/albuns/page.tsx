@@ -36,6 +36,7 @@ export default async function AlbumsPage({
   });
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const hasFilter = filter !== "all";
+  const cards = await Promise.all(albums.map(toAdminCard));
 
   const pageHref = (p: number) => {
     const params = new URLSearchParams();
@@ -70,8 +71,8 @@ export default async function AlbumsPage({
         />
       ) : (
         <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {albums.map((a) => (
-            <AlbumCard key={a.id} album={toAdminCard(a)} />
+          {cards.map((card) => (
+            <AlbumCard key={card.id} album={card} />
           ))}
         </div>
       )}

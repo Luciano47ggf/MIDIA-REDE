@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireTeamUserApi } from "@/lib/auth";
 import { jsonError, logServerError, readJson } from "@/lib/api";
-import { presignPut } from "@/lib/r2";
+import { presignPut } from "@/lib/storage";
 import { previewKey, thumbKey, UUID_RE } from "@/lib/storage-keys";
 import type { DerivativesResponse } from "@/types/upload";
 
