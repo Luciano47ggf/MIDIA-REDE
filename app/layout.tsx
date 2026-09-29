@@ -1,15 +1,17 @@
 import type { Metadata, Viewport } from "next";
 import type { CSSProperties } from "react";
-import { Bricolage_Grotesque, Figtree } from "next/font/google";
+import { Bricolage_Grotesque, Figtree, Playfair_Display } from "next/font/google";
 import { siteConfig } from "@/lib/config";
 import "./globals.css";
 
 const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-bricolage", display: "swap" });
 const body = Figtree({ subsets: ["latin"], variable: "--font-figtree", display: "swap" });
+// Fonte editorial (serifada) usada na página inicial.
+const editorial = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
-  title: { default: `${siteConfig.homeTitle} · ${siteConfig.churchName}`, template: `%s · ${siteConfig.appName}` },
+  title: { default: siteConfig.appName, template: `%s · ${siteConfig.appName}` },
   description: siteConfig.homeSubtitle,
   icons: { icon: siteConfig.logo },
 };
@@ -27,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   } as CSSProperties;
 
   return (
-    <html lang="pt-BR" style={brandVars} className={`${display.variable} ${body.variable}`}>
+    <html lang="pt-BR" style={brandVars} className={`${display.variable} ${body.variable} ${editorial.variable}`}>
       <body className="min-h-dvh antialiased">{children}</body>
     </html>
   );

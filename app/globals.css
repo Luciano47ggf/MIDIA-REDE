@@ -39,6 +39,8 @@
   --color-sidebar-fg-active: var(--sidebar-fg-active);
   --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-figtree), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Serifada editorial, usada na página inicial (título, herói, rodapé). */
+  --font-editorial: var(--font-playfair), ui-serif, Georgia, "Times New Roman", serif;
 }
 
 html {
