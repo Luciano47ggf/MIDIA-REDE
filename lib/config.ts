@@ -6,13 +6,13 @@
 export const siteConfig = {
   appName: "Mídia Videira",
   churchName: "Igreja Videira",
-  logo: "/logo.svg",
+  logo: "/logo.jpg",
   /**
    * Foto de fundo do banner da página inicial (opcional).
    * Coloque o arquivo em /public (ex.: public/hero.jpg) e informe o caminho aqui.
    * Sem foto, a página inicial usa um degradê azul-marinho no lugar.
    */
-  heroImage: null as string | null,
+  heroImage: "/hero.png" as string | null,
   homeEyebrow: "Registros que contam histórias",
   homeTitle: "Mídia Videira",
   homeSubtitle: "Confira os registros dos nossos cultos, celebrações e eventos.",

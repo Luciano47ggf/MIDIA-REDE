@@ -54,6 +54,28 @@ export function publicUrl(key: string): string {
   return `${serverEnv.r2PublicUrl}/${key.split("/").map(encodeURIComponent).join("/")}`;
 }
 
+/** Inverso de publicUrl(): recupera a chave do R2 a partir da URL pública, se ela for deste bucket. */
+export function keyFromPublicUrl(url: string): string | null {
+  const prefix = `${serverEnv.r2PublicUrl}/`;
+  if (!url.startsWith(prefix)) return null;
+  try {
+    return url
+      .slice(prefix.length)
+      .split("/")
+      .map((s) => decodeURIComponent(s))
+      .join("/");
+  } catch {
+    return null;
+  }
+}
+
+/** Upload direto e pequeno feito pelo próprio servidor (ex.: foto de perfil). Não usa URL assinada. */
+export async function putPublicObject(key: string, body: Buffer, contentType: string) {
+  await r2().send(
+    new PutObjectCommand({ Bucket: bucket(), Key: key, Body: body, ContentType: contentType, CacheControl: IMMUTABLE_CACHE }),
+  );
+}
+
 export async function presignPut(key: string, contentType: string) {
   const url = await getSignedUrl(
     r2(),

@@ -25,6 +25,11 @@ export function previewKey(albumId: string, mediaId: string) {
   return `${albumPrefix(albumId)}previews/${mediaId}.jpg`;
 }
 
+/** Foto de perfil do usuário. O timestamp evita cache antigo quando a pessoa troca a foto. */
+export function avatarKey(userId: string, ext: string) {
+  return `avatars/${userId}-${Date.now()}.${ext}`;
+}
+
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 export const UUID_RE = new RegExp(`^${UUID}$`, "i");
 

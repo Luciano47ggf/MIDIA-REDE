@@ -57,7 +57,15 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
   );
 }
 
-export function AdminNav({ userName, userEmail }: { userName: string; userEmail: string }) {
+export function AdminNav({
+  userName,
+  userEmail,
+  avatarUrl,
+}: {
+  userName: string;
+  userEmail: string;
+  avatarUrl?: string | null;
+}) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -102,7 +110,7 @@ export function AdminNav({ userName, userEmail }: { userName: string; userEmail:
           <AdminBrand />
         </div>
         <div className="hidden flex-1 lg:block" />
-        <UserMenu name={userName} email={userEmail} />
+        <UserMenu name={userName} email={userEmail} avatarUrl={avatarUrl} />
       </header>
 
       {/* Celular: gaveta de navegação recolhível */}

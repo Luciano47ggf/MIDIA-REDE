@@ -37,8 +37,8 @@ export function AlbumCard({ album }: { album: AdminAlbumCardData }) {
   }
 
   return (
-    <article className="group overflow-hidden rounded-2xl border border-line bg-surface shadow-sm transition hover:shadow-md">
-      <Link href={`/admin/albuns/${album.id}`} className="relative block aspect-[4/3] overflow-hidden bg-ink/[0.05]">
+    <article className="group rounded-2xl border border-line bg-surface shadow-sm transition hover:shadow-md">
+      <Link href={`/admin/albuns/${album.id}`} className="relative block aspect-[4/3] overflow-hidden rounded-t-2xl bg-ink/[0.05]">
         {album.coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={album.coverUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />

@@ -13,9 +13,13 @@ create table if not exists public.profiles (
   id          uuid primary key references auth.users (id) on delete cascade,
   email       text not null,
   name        text,
+  avatar_url  text,
   role        text not null default 'editor' check (role in ('admin', 'editor')),
   created_at  timestamptz not null default now()
 );
+
+-- Para bancos criados antes deste campo existir.
+alter table public.profiles add column if not exists avatar_url text;
 
 -- ─── ALBUMS ─────────────────────────────────────────────────────
 create table if not exists public.albums (

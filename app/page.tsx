@@ -28,11 +28,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     <div className="flex min-h-dvh flex-col bg-paper">
       <header className="border-b border-line bg-surface">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
-          <Link href="/" className="inline-flex items-center gap-2.5">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line bg-white">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={siteConfig.logo} alt="" width={22} height={22} className="h-[22px] w-[22px]" />
-            </span>
+          <Link href="/" className="inline-flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={siteConfig.logo} alt="" width={40} height={40} className="h-10 w-10 shrink-0 rounded-full object-cover" />
             <span className="font-editorial text-xl font-bold tracking-tight text-ink">{siteConfig.churchName}</span>
           </Link>
           <Link
@@ -45,12 +43,13 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         </div>
       </header>
 
-      <section className="relative overflow-hidden">
+      <section className="relative flex min-h-[440px] items-center overflow-hidden sm:min-h-[560px]">
         {siteConfig.heroImage ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={siteConfig.heroImage} alt="" className="absolute inset-0 h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-sidebar via-sidebar/70 to-sidebar/40" />
+            <div className="absolute inset-0 bg-gradient-to-t from-sidebar via-sidebar/55 to-sidebar/25" />
+            <div className="absolute inset-0 bg-gradient-to-r from-sidebar/85 via-sidebar/30 to-transparent" />
           </>
         ) : (
           <div
@@ -61,7 +60,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             }}
           />
         )}
-        <div className="relative mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
+        <div className="relative mx-auto w-full max-w-7xl px-5 py-16 sm:px-8">
           <div className="flex items-center gap-3">
             <span className="h-px w-10 bg-white/40" />
             <span className="text-xs font-semibold uppercase tracking-[0.22em] text-white/70">{siteConfig.homeEyebrow}</span>
@@ -120,10 +119,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       <footer className="bg-sidebar">
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-6 px-5 py-10 sm:px-8">
           <div className="flex items-center gap-4">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/15 bg-white/5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={siteConfig.logo} alt="" width={22} height={22} className="h-[22px] w-[22px]" />
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={siteConfig.logo} alt="" width={40} height={40} className="h-10 w-10 shrink-0 rounded-full object-cover" />
             <span className="font-editorial text-lg font-bold text-white">{siteConfig.churchName}</span>
             <span className="hidden h-8 w-px bg-white/15 sm:block" />
             <span className="hidden text-sm text-white/55 sm:block">

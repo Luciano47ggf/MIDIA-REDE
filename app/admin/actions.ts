@@ -4,8 +4,9 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireTeamUser } from "@/lib/auth";
-import { deleteKeys, deletePrefix } from "@/lib/r2";
-import { albumPrefix, UUID_RE } from "@/lib/storage-keys";
+import { deleteKeys, deletePrefix, keyFromPublicUrl, publicUrl, putPublicObject } from "@/lib/r2";
+import { albumPrefix, avatarKey, UUID_RE } from "@/lib/storage-keys";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult, AlbumStatus, AlbumVisibility } from "@/types";
 import { SLUG_PATTERN } from "@/utils/slug";
@@ -193,6 +194,62 @@ export async function deleteAlbumAction(albumId: string): Promise<ActionResult> 
   }
   revalidateAlbum(data.slug);
   return { ok: true, message: "Álbum excluído." };
+}
+
+// ─── Foto de perfil ─────────────────────────────────────────────
+
+const AVATAR_MIME_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+const MAX_AVATAR_BYTES = 8 * 1024 * 1024; // 8 MB
+
+export async function updateAvatarAction(formData: FormData): Promise<ActionResult> {
+  const profile = await requireTeamUser();
+  const file = formData.get("avatar");
+  if (!(file instanceof File) || file.size === 0) return { ok: false, message: "Selecione uma foto." };
+
+  const ext = AVATAR_MIME_EXT[file.type];
+  if (!ext) return { ok: false, message: "Formato não aceito. Envie uma foto em JPG, PNG ou WEBP." };
+  if (file.size > MAX_AVATAR_BYTES) return { ok: false, message: "Foto muito grande (máximo 8 MB)." };
+
+  const key = avatarKey(profile.id, ext);
+  const bytes = Buffer.from(await file.arrayBuffer());
+  try {
+    await putPublicObject(key, bytes, file.type);
+  } catch {
+    return { ok: false, message: "Não foi possível enviar a foto. Tente novamente." };
+  }
+
+  const url = publicUrl(key);
+  // Sem policy de UPDATE para a pessoa alterar o próprio perfil; usamos a service role
+  // aqui dentro, já autenticados por requireTeamUser(), só para esta coluna.
+  const admin = createAdminClient();
+  const { error } = await admin.from("profiles").update({ avatar_url: url }).eq("id", profile.id);
+  if (error) {
+    await deleteKeys([key]).catch(() => {});
+    return { ok: false, message: "Não foi possível salvar a foto. Tente novamente." };
+  }
+
+  const oldKey = profile.avatar_url ? keyFromPublicUrl(profile.avatar_url) : null;
+  if (oldKey) await deleteKeys([oldKey]).catch(() => {});
+
+  revalidatePath("/admin", "layout");
+  return { ok: true, message: "Foto de perfil atualizada." };
+}
+
+export async function removeAvatarAction(): Promise<ActionResult> {
+  const profile = await requireTeamUser();
+  const admin = createAdminClient();
+  const { error } = await admin.from("profiles").update({ avatar_url: null }).eq("id", profile.id);
+  if (error) return { ok: false, message: "Não foi possível remover a foto." };
+
+  const oldKey = profile.avatar_url ? keyFromPublicUrl(profile.avatar_url) : null;
+  if (oldKey) await deleteKeys([oldKey]).catch(() => {});
+
+  revalidatePath("/admin", "layout");
+  return { ok: true, message: "Foto de perfil removida." };
 }
 
 export async function signOutAction() {

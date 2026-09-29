@@ -4,18 +4,11 @@ import { ChevronDown, LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { signOutAction } from "@/app/admin/actions";
+import { Avatar } from "@/components/admin/avatar";
 import { cn } from "@/utils/cn";
 
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  const first = parts[0][0] ?? "";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] ?? "" : "";
-  return (first + last).toUpperCase();
-}
-
-/** Avatar com iniciais + menu (Minha conta / Sair), no canto superior direito do painel. */
-export function UserMenu({ name, email }: { name: string; email: string }) {
+/** Foto de perfil (ou iniciais) + menu (Minha conta / Sair), no canto superior direito do painel. */
+export function UserMenu({ name, email, avatarUrl }: { name: string; email: string; avatarUrl?: string | null }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -43,9 +36,7 @@ export function UserMenu({ name, email }: { name: string; email: string }) {
         aria-expanded={open}
         className="flex h-11 items-center gap-2 rounded-xl px-2 text-left transition hover:bg-ink/[0.05] sm:pr-3"
       >
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand text-sm font-semibold text-white">
-          {initials(name)}
-        </span>
+        <Avatar name={name} avatarUrl={avatarUrl} className="h-8 w-8 text-sm" />
         <span className="hidden min-w-0 sm:block">
           <span className="block max-w-[160px] truncate text-sm font-medium leading-tight text-ink">{name}</span>
           <span className="block max-w-[160px] truncate text-xs leading-tight text-muted">{email}</span>

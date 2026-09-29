@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-dvh bg-paper lg:pl-72">
-      <AdminNav userName={profile.name ?? profile.email} userEmail={profile.email} />
+      <AdminNav userName={profile.name ?? profile.email} userEmail={profile.email} avatarUrl={profile.avatar_url} />
       <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-6 lg:px-10 lg:pt-10">{children}</main>
       <UploadGuard />
     </div>

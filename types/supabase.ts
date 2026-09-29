@@ -7,6 +7,7 @@ type ProfileRow = {
   id: string;
   email: string;
   name: string | null;
+  avatar_url: string | null;
   role: "admin" | "editor";
   created_at: string;
 };
