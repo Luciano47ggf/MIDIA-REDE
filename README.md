@@ -191,28 +191,38 @@ proxy.ts                protege /admin (no Next 16 o "middleware" se chama "prox
 
 ## 8. Configurar o CORS
 
-O CORS autoriza o navegador, a partir do seu site, a enviar e ler arquivos direto no B2 usando as URLs assinadas.
+O CORS autoriza o navegador, a partir do seu site, a enviar e ler arquivos direto no B2 usando as URLs assinadas. Aplicamos a regra pela **API S3-compatible do B2** com o AWS CLI (a CLI nativa do B2 usa um formato de regra diferente e não é o que este projeto usa).
 
-1. Instale a **B2 Command Line Tool** (`pip install b2` ou baixe o binário em backblaze.com) e autentique com `b2 account authorize` usando o `B2_KEY_ID` e o `B2_APPLICATION_KEY`.
-2. Rode (trocando `SEU-BUCKET` pelo nome do bucket, e o endereço da Vercel depois que publicar):
+1. Instale o **AWS CLI** (`winget install Amazon.AWSCLI` no Windows, ou o instalador em aws.amazon.com/cli).
+2. Configure um profile com as chaves do B2 (Access Key = `B2_KEY_ID`, Secret Key = `B2_APPLICATION_KEY`):
    ```
-   b2 bucket update SEU-BUCKET --cors-rules "$(cat b2-cors.json)"
+   aws configure --profile b2
    ```
-3. O conteúdo usado está no arquivo `b2-cors.json`:
+   Em *Default region name*, informe a região do seu endpoint (ex.: `us-east-005`). Em *Default output format* pode deixar em branco.
+3. O conteúdo usado está no arquivo `b2-cors.json` (formato padrão S3, com `CORSRules`):
    ```json
-   [
-     {
-       "corsRuleName": "midia-igreja-uploads",
-       "allowedOrigins": ["http://localhost:3000", "https://SEU-PROJETO.vercel.app"],
-       "allowedOperations": ["s3_get", "s3_put", "s3_head"],
-       "allowedHeaders": ["content-type", "cache-control"],
-       "exposeHeaders": ["ETag"],
-       "maxAgeSeconds": 3600
-     }
-   ]
+   {
+     "CORSRules": [
+       {
+         "AllowedOrigins": ["https://SEU-PROJETO.vercel.app", "http://localhost:3000"],
+         "AllowedMethods": ["GET", "HEAD", "PUT"],
+         "AllowedHeaders": ["*"],
+         "ExposeHeaders": ["ETag"],
+         "MaxAgeSeconds": 3600
+       }
+     ]
+   }
+   ```
+4. Aplique no bucket (troque `SEU-BUCKET` e o endpoint pelos valores do passo 6):
+   ```
+   aws s3api put-bucket-cors --bucket SEU-BUCKET --cors-configuration file://b2-cors.json --endpoint-url https://s3.SUA-REGIAO.backblazeb2.com --profile b2
+   ```
+5. Confira se aplicou:
+   ```
+   aws s3api get-bucket-cors --bucket SEU-BUCKET --endpoint-url https://s3.SUA-REGIAO.backblazeb2.com --profile b2
    ```
 
-> O `exposeHeaders: ["ETag"]` é **obrigatório** para o envio de vídeos grandes em partes. Sempre que adicionar um novo endereço (ex.: domínio próprio), rode o comando de novo com a lista de origens atualizada.
+> O `ExposeHeaders: ["ETag"]` é **obrigatório** para o envio de vídeos grandes em partes (multipart). Sempre que adicionar um novo endereço (ex.: domínio próprio), edite `b2-cors.json` e rode o comando do passo 4 de novo.
 
 ## 9. Preencher o .env.local
 
