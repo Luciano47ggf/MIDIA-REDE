@@ -29,6 +29,8 @@ const corsConfiguration = {
     {
       AllowedOrigins: [
         "https://midia-igreja-rho.vercel.app",
+        "https://www.midiaprismar.com.br",
+        "https://midiaprismar.com.br",
         "http://localhost:3000",
       ],
       AllowedMethods: ["GET", "HEAD", "PUT"],
