@@ -56,11 +56,39 @@ export function storageClient(): S3Client {
 
 const bucket = () => serverEnv.b2BucketName;
 
+/**
+ * Cache de URLs assinadas de LEITURA, em memória do processo.
+ * Gerar uma URL assinada é só matemática local (não é transação do B2), mas a URL
+ * em si mudava a cada chamada (timestamp/assinatura diferentes) mesmo para a MESMA
+ * chave — isso impedia o navegador de reaproveitar o cache HTTP e forçava um novo
+ * GetObject no B2 a cada renderização. Reaproveitando a mesma URL enquanto ela
+ * ainda for válida, o navegador passa a servir do próprio cache (Cache-Control
+ * immutable já gravado no objeto) e o GetObject real nem chega a acontecer.
+ */
+const GET_URL_REFRESH_MARGIN = 15 * 60 * 1000; // renova um pouco antes de vencer
+const getUrlCache = new Map<string, { url: string; expiresAt: number }>();
+
+function pruneExpiredGetUrls(now: number) {
+  if (getUrlCache.size < 2000) return;
+  for (const [key, entry] of getUrlCache) {
+    if (entry.expiresAt <= now) getUrlCache.delete(key);
+  }
+}
+
+/** Descarta a URL assinada em cache de uma chave (usar quando o conteúdo daquela chave muda ou é apagado). */
+function invalidateGetUrl(key: string) {
+  getUrlCache.delete(key);
+}
+
 /** Upload direto e pequeno feito pelo próprio servidor (ex.: foto de perfil). Não usa URL assinada. */
 export async function putObject(key: string, body: Buffer, contentType: string) {
   await storageClient().send(
     new PutObjectCommand({ Bucket: bucket(), Key: key, Body: body, ContentType: contentType, CacheControl: IMMUTABLE_CACHE }),
   );
+  // A mesma chave pode ser reaproveitada (ex.: trocar a foto de perfil mantendo a extensão):
+  // sem isto, a URL assinada antiga ficaria em cache apontando para o conteúdo novo, mas o
+  // NAVEGADOR manteria os bytes antigos em cache por causa do Cache-Control immutable.
+  invalidateGetUrl(key);
 }
 
 export async function presignPut(key: string, contentType: string) {
@@ -73,9 +101,21 @@ export async function presignPut(key: string, contentType: string) {
   return { url, headers: { "Content-Type": contentType, "Cache-Control": IMMUTABLE_CACHE } };
 }
 
-/** URL temporária de LEITURA (bucket privado). Usada para thumbnail, prévia, vídeo e avatar. */
+/**
+ * URL temporária de LEITURA (bucket privado). Usada para thumbnail, prévia, vídeo e avatar.
+ * Reaproveita a última URL assinada para a mesma chave enquanto ela ainda tiver
+ * margem de validade, em vez de assinar uma nova a cada chamada (ver cache acima).
+ */
 export async function presignGet(key: string, expiresIn: number = GET_URL_TTL): Promise<string> {
-  return getSignedUrl(storageClient(), new GetObjectCommand({ Bucket: bucket(), Key: key }), { expiresIn });
+  const now = Date.now();
+  const cached = getUrlCache.get(key);
+  if (cached && cached.expiresAt - now > GET_URL_REFRESH_MARGIN) {
+    return cached.url;
+  }
+  const url = await getSignedUrl(storageClient(), new GetObjectCommand({ Bucket: bucket(), Key: key }), { expiresIn });
+  pruneExpiredGetUrls(now);
+  getUrlCache.set(key, { url, expiresAt: now + expiresIn * 1000 });
+  return url;
 }
 
 export async function createMultipart(key: string, contentType: string): Promise<string> {
@@ -152,6 +192,7 @@ export async function deleteKeys(keys: string[]) {
         Delete: { Objects: chunk.map((Key) => ({ Key })), Quiet: true },
       }),
     );
+    for (const key of chunk) invalidateGetUrl(key);
   }
 }
 

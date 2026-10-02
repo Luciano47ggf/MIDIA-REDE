@@ -31,19 +31,20 @@ export async function POST(request: Request) {
     return jsonError("Miniatura inválida.");
   }
 
+  // Confere no B2 só o ORIGINAL (integridade de tamanho após o upload em partes).
+  // Miniatura e prévia não precisam de HeadObject aqui: o cliente só informa thumbKey/
+  // previewKey depois que o PUT assinado para aquela chave exata já respondeu sucesso
+  // (ver uploadDerivatives em lib/upload/upload-manager.ts), então re-conferir seria
+  // uma leitura redundante no B2 para algo que já se sabe que existe.
   let original: Awaited<ReturnType<typeof headObject>>;
-  let thumbExists = false;
-  let previewExists = false;
   try {
-    [original, thumbExists, previewExists] = await Promise.all([
-      headObject(b.key),
-      b.thumbKey ? headObject(b.thumbKey).then(Boolean) : Promise.resolve(false),
-      b.previewKey ? headObject(b.previewKey).then(Boolean) : Promise.resolve(false),
-    ]);
+    original = await headObject(b.key);
   } catch (err) {
     logServerError("media/register head", err);
     return jsonError("Não foi possível confirmar o arquivo no Backblaze B2.", 502);
   }
+  const thumbExists = Boolean(b.thumbKey);
+  const previewExists = Boolean(b.previewKey);
 
   if (!original) return jsonError("O arquivo não chegou ao Backblaze B2. Envie novamente.", 409);
   if (original.size !== b.size) {
