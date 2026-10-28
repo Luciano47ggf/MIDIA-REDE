@@ -47,7 +47,7 @@ export function UploadDropzone({ albumId }: { albumId: string }) {
           <CloudUpload className="h-8 w-8" />
         </span>
         <p className="mt-5 font-display text-xl font-semibold tracking-tight sm:text-2xl">Arraste suas fotos e vídeos aqui</p>
-        <p className="mt-1 text-sm text-muted">JPG, PNG, WEBP, MP4, MOV e WEBM. Os arquivos são enviados sem compressão.</p>
+        <p className="mt-1 text-sm text-muted">JPG, PNG, WEBP, HEIC, MP4, MOV e WEBM. Os arquivos são enviados sem compressão.</p>
         <button
           type="button"
           onClick={() => inputRef.current?.click()}

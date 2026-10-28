@@ -36,8 +36,16 @@ function Row({ item }: { item: UploadItem }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-3">
-          <p className="truncate text-[15px] font-medium" title={item.name}>
-            {item.name}
+          <p className="flex items-center gap-1.5 truncate text-[15px] font-medium" title={item.name}>
+            <span className="truncate">{item.name}</span>
+            {item.heavy && (
+              <span
+                className="shrink-0 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-medium text-amber-600"
+                title="Arquivo grande: processado separadamente para não travar os demais."
+              >
+                pesado
+              </span>
+            )}
           </p>
           <span className="shrink-0 text-sm tabular-nums text-muted">{pct}%</span>
         </div>

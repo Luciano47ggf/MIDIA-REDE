@@ -16,6 +16,8 @@ export interface UploadItem {
   /** URL local (blob:) para mostrar a miniatura enquanto envia */
   localPreview?: string;
   resumed?: boolean;
+  /** Arquivo grande (ver HEAVY_BYTES): processado sozinho, fora da fila normal. */
+  heavy?: boolean;
 }
 
 export interface InitUploadRequest {

@@ -7,6 +7,11 @@ export const ALLOWED_FORMATS: Record<string, { kind: MediaType; mime: string }> 
   jpeg: { kind: "photo", mime: "image/jpeg" },
   png: { kind: "photo", mime: "image/png" },
   webp: { kind: "photo", mime: "image/webp" },
+  // HEIC/HEIF: formato padrão de câmera do iPhone. Aceitar direto evita que o
+  // iOS converta cada foto para JPEG antes de entregar ao navegador — essa
+  // conversão em massa é o que trava a galeria ao selecionar muitos arquivos.
+  heic: { kind: "photo", mime: "image/heic" },
+  heif: { kind: "photo", mime: "image/heif" },
   mp4: { kind: "video", mime: "video/mp4" },
   mov: { kind: "video", mime: "video/quicktime" },
   webm: { kind: "video", mime: "video/webm" },
@@ -21,6 +26,13 @@ export const MAX_VIDEO_BYTES = 30 * 1024 * 1024 * 1024; // 30 GB por vídeo
 export const MULTIPART_THRESHOLD = 32 * 1024 * 1024; // 32 MB
 export const MIN_PART_SIZE = 10 * 1024 * 1024; // 10 MB
 export const MAX_PARTS = 9000; // limite do R2/S3 é 10.000
+
+/**
+ * Acima deste tamanho, o arquivo é tratado como "pesado": processado sozinho
+ * (sem concorrer com os outros pela geração de miniatura) para não deixar a
+ * aba lenta enquanto o navegador decodifica um vídeo/foto muito grande.
+ */
+export const HEAVY_BYTES = 300 * 1024 * 1024; // 300 MB
 
 export const ACCEPT_ATTRIBUTE = [
   ...Object.keys(ALLOWED_FORMATS).map((e) => `.${e}`),

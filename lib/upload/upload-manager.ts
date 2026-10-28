@@ -6,7 +6,7 @@ import type {
   UploadedPart,
   UploadItem,
 } from "@/types/upload";
-import { checkFile } from "@/lib/media-rules";
+import { checkFile, HEAVY_BYTES } from "@/lib/media-rules";
 import { AbortedError, apiPost, UploadError } from "./errors";
 import { readMediaInfo, type MediaInfo } from "./media-info";
 import { clearResume, fingerprint, loadResume, saveResume, type ResumeState } from "./resume-store";
@@ -20,6 +20,8 @@ import { putWithProgress } from "./xhr";
  * - funciona fora do React, então os envios continuam enquanto a pessoa navega pelo painel.
  */
 const FILE_CONCURRENCY = 4;
+/** Arquivos pesados (ver HEAVY_BYTES) são processados um por vez, numa fila separada. */
+const HEAVY_CONCURRENCY = 1;
 const PART_CONCURRENCY = 3;
 const PART_RETRIES = 4;
 const SIGN_BATCH = 20;
@@ -41,7 +43,8 @@ class UploadManager {
   private listeners = new Set<Listener>();
   private doneListeners = new Set<DoneListener>();
   private controllers = new Map<string, AbortController>();
-  private active = 0;
+  private activeNormal = 0;
+  private activeHeavy = 0;
   private emitTimer: ReturnType<typeof setTimeout> | null = null;
   private seq = 0;
 
@@ -95,6 +98,7 @@ class UploadManager {
         status: "queued",
         loaded: 0,
         localPreview: check.kind === "photo" ? URL.createObjectURL(file) : undefined,
+        heavy: file.size > HEAVY_BYTES,
       });
     }
     this.emit(true);
@@ -182,14 +186,27 @@ class UploadManager {
   }
 
   private pump() {
-    while (this.active < FILE_CONCURRENCY) {
-      const next = this.items.find((i) => i.status === "queued");
+    // Fila normal e fila de arquivos pesados correm em paralelo, mas não competem
+    // pelo mesmo limite: um vídeo gigante não atrasa fotos pequenas, e vice-versa.
+    while (this.activeNormal < FILE_CONCURRENCY) {
+      const next = this.items.find((i) => i.status === "queued" && !i.heavy);
       if (!next) break;
-      this.active++;
+      this.activeNormal++;
       next.status = "preparing";
       this.emit(true);
       void this.run(next.id).finally(() => {
-        this.active--;
+        this.activeNormal--;
+        this.pump();
+      });
+    }
+    while (this.activeHeavy < HEAVY_CONCURRENCY) {
+      const next = this.items.find((i) => i.status === "queued" && i.heavy);
+      if (!next) break;
+      this.activeHeavy++;
+      next.status = "preparing";
+      this.emit(true);
+      void this.run(next.id).finally(() => {
+        this.activeHeavy--;
         this.pump();
       });
     }
