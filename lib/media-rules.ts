@@ -34,9 +34,15 @@ export const MAX_PARTS = 9000; // limite do R2/S3 é 10.000
  */
 export const HEAVY_BYTES = 300 * 1024 * 1024; // 300 MB
 
+// .zip não é um formato de mídia (não entra em ALLOWED_FORMATS): é só um
+// contêiner que o navegador abre e extrai antes de enviar o conteúdo.
+export const ZIP_MIMES = ["application/zip", "application/x-zip-compressed"];
+
 export const ACCEPT_ATTRIBUTE = [
   ...Object.keys(ALLOWED_FORMATS).map((e) => `.${e}`),
   ...ALLOWED_MIMES,
+  ".zip",
+  ...ZIP_MIMES,
 ].join(",");
 
 export type FileCheck =
